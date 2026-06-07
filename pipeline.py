@@ -100,9 +100,8 @@ def run(
     enriched["drive_distance_km"] = None
     enriched["drive_time_min"] = None
     valid_indices = enriched.index[valid_mask].tolist()
-    for i, idx in enumerate(valid_indices):
-        enriched.at[idx, "drive_distance_km"] = drive_results[i]["drive_distance_km"]
-        enriched.at[idx, "drive_time_min"] = drive_results[i]["drive_time_min"]
+    drive_df = pd.DataFrame(drive_results, index=valid_indices)
+    enriched.loc[valid_indices, ["drive_distance_km", "drive_time_min"]] = drive_df[["drive_distance_km", "drive_time_min"]]
 
     enriched["time_band"] = enriched["drive_time_min"].apply(
         lambda v: _assign_band(v, TIME_BANDS)

@@ -111,7 +111,7 @@ except ValueError as e:
     st.stop()
 
 # ── Process / load cache ──────────────────────────────────────────────────────
-cached_df = st.session_state.get("enriched_df", pipeline.load_cache())
+cached_df = st.session_state["enriched_df"] if "enriched_df" in st.session_state else pipeline.load_cache()
 
 if cached_df is None:
     if st.button("▶ Process — Geocode + Route", type="primary"):

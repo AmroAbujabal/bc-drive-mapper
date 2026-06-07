@@ -57,8 +57,6 @@ def get_drive_matrix(
 
         try:
             data = _osrm_request(url, params)
-            if data is None:
-                raise ValueError("OSRM request returned None after retries")
             durations = (data.get("durations") or [[]])[0]  # seconds, may contain null
             distances = (data.get("distances") or [[]])[0]  # metres, may contain null
 
