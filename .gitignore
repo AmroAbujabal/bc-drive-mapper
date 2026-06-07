@@ -1,0 +1,6 @@
+cache.db
+enriched_cache.parquet
+*.csv
+__pycache__/
+*.pyc
+.env
