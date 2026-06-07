@@ -1,6 +1,7 @@
 cache.db
 enriched_cache.parquet
 *.csv
+!sample_patients.csv
 __pycache__/
 *.pyc
 .env

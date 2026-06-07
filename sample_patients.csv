@@ -1,0 +1,31 @@
+patient_id,address,postcode,outcome_score
+1,1234 Robson St,V6G 1C1,8.2
+2,4567 Oak St,V6H 2M4,7.5
+3,890 Granville St,V6Z 1K3,9.1
+4,2233 Commercial Dr,V5N 4B7,6.8
+5,100 Main St,V6A 2S5,7.9
+6,3456 Kingsway,V5R 5J8,5.4
+7,7890 Knight St,V5P 2W9,6.1
+8,222 Marine Dr,V7P 1S3,8.7
+9,555 Lonsdale Ave,V7M 2H5,7.3
+10,1010 Davie St,V6E 1M3,9.4
+11,12345 96 Ave,V3V 1Y6,4.2
+12,9876 King George Blvd,V3T 2W4,3.8
+13,5432 152 St,V3S 3P6,4.9
+14,7654 Scott Rd,V3S 3S5,5.1
+15,321 Columbia St,V3L 1A5,6.3
+16,100 Lougheed Hwy,V3C 4H9,5.8
+17,2000 Queensway,V8T 4Y9,3.1
+18,500 Fort St,V8W 1E5,2.9
+19,1275 Sunset Dr,V1Y 9N1,1.8
+20,1802 Gordon Dr,V1Y 3H2,2.2
+21,500 Harvey Ave,V1Y 6C7,1.5
+22,2050 Harvey Ave,V1Y 9K2,1.7
+23,1450 KLO Rd,V1W 3Z4,2.0
+24,450 Mission Rd,V1Y 4M7,1.9
+25,3456 33 St,V9A 1X9,3.5
+26,500 Victoria St,V2C 2A9,2.3
+27,1234 Trans-Canada Hwy,V2S 7M9,2.7
+28,789 Columbia St,V2L 1B2,1.2
+29,500 Airport Rd,V8B 0A8,1.4
+30,1234 Main St,V0N 1B1,0.9
