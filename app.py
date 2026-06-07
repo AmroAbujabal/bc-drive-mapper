@@ -147,6 +147,14 @@ else:
 enriched_df = st.session_state["enriched_df"]
 
 # ── Metric cards ──────────────────────────────────────────────────────────────
+def _fmt_time(mins) -> str:
+    if not pd.notna(mins):
+        return "N/A"
+    m = int(round(mins))
+    if m < 60:
+        return f"{m} min"
+    return f"{m // 60} h {m % 60} min"
+
 total = len(enriched_df)
 geocoded_ok = enriched_df["lat"].notna().sum()
 low_conf = ((enriched_df["score"] < score_threshold) & enriched_df["lat"].notna()).sum()
@@ -159,9 +167,9 @@ c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
 c1.metric("Total rows", f"{total:,}")
 c2.metric("Geocoded OK", f"{geocoded_ok:,}")
 c3.metric("Low confidence", f"{low_conf:,}")
-c4.metric("Median time", f"{med_time:.0f} min" if pd.notna(med_time) else "N/A")
-c5.metric("Mean time", f"{mean_time:.0f} min" if pd.notna(mean_time) else "N/A")
-c6.metric("Max time", f"{max_time:.0f} min" if pd.notna(max_time) else "N/A")
+c4.metric("Median time", _fmt_time(med_time))
+c5.metric("Mean time", _fmt_time(mean_time))
+c6.metric("Max time", _fmt_time(max_time))
 c7.metric("Median distance", f"{med_dist:.0f} km" if pd.notna(med_dist) else "N/A")
 
 st.markdown("---")
