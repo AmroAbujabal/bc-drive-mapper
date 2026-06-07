@@ -6,7 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import folium
 
-from pipeline import TIME_BAND_ORDER, DISTANCE_BAND_ORDER
+from pipeline import TIME_BAND_ORDER
 
 TIME_BAND_COLORS = {
     "0\u201315 min":   "#2196F3",
@@ -16,6 +16,8 @@ TIME_BAND_COLORS = {
     "120+ min":        "#9C27B0",
     "Unknown":         "#9E9E9E",
 }
+
+_FALLBACK_COLOR = "#9E9E9E"
 
 
 def make_map(
@@ -34,34 +36,34 @@ def make_map(
         icon=folium.Icon(color="red", icon="plus-sign", prefix="glyphicon"),
     ).add_to(m)
 
-    valid = df[df["lat"].notna() & df["lon"].notna()].copy()
-    low_conf = valid[valid["score"] < score_threshold]
-    high_conf = valid[valid["score"] >= score_threshold]
+    valid = df[df["lat"].notna() & df["lon"].notna()]
 
-    for _, row in low_conf.iterrows():
-        folium.CircleMarker(
-            location=[row["lat"], row["lon"]],
-            radius=4,
-            color="#9E9E9E",
-            fill=False,
-            weight=1,
-            tooltip=f"Low confidence (score={row['score']:.0f})",
-        ).add_to(m)
-
-    for _, row in high_conf.iterrows():
-        color = TIME_BAND_COLORS.get(row.get("time_band", "Unknown"), "#9E9E9E")
-        time_val = f"{row['drive_time_min']:.0f} min" if pd.notna(row.get("drive_time_min")) else "N/A"
-        dist_val = f"{row['drive_distance_km']:.1f} km" if pd.notna(row.get("drive_distance_km")) else "N/A"
-        folium.CircleMarker(
-            location=[row["lat"], row["lon"]],
-            radius=5,
-            color=color,
-            fill=True,
-            fill_color=color,
-            fill_opacity=0.7,
-            weight=1,
-            tooltip=f"{row.get('time_band', 'Unknown')} \u00b7 {time_val} \u00b7 {dist_val}",
-        ).add_to(m)
+    for _, row in valid.iterrows():
+        is_high_conf = row["score"] >= score_threshold
+        if is_high_conf:
+            band = row["time_band"] if pd.notna(row["time_band"]) else "Unknown"
+            color = TIME_BAND_COLORS.get(band, _FALLBACK_COLOR)
+            time_val = f"{row['drive_time_min']:.0f} min" if pd.notna(row["drive_time_min"]) else "N/A"
+            dist_val = f"{row['drive_distance_km']:.1f} km" if pd.notna(row["drive_distance_km"]) else "N/A"
+            folium.CircleMarker(
+                location=[row["lat"], row["lon"]],
+                radius=5,
+                color=color,
+                fill=True,
+                fill_color=color,
+                fill_opacity=0.7,
+                weight=1,
+                tooltip=f"{band} \u00b7 {time_val} \u00b7 {dist_val}",
+            ).add_to(m)
+        else:
+            folium.CircleMarker(
+                location=[row["lat"], row["lon"]],
+                radius=4,
+                color=_FALLBACK_COLOR,
+                fill=False,
+                weight=1,
+                tooltip=f"Low confidence (score={row['score']:.0f})",
+            ).add_to(m)
 
     legend_html = (
         '<div style="position:fixed;bottom:30px;left:30px;z-index:1000;'
@@ -84,13 +86,13 @@ def make_map(
 def make_histogram(df: pd.DataFrame, bin_size_min: int = 15) -> go.Figure:
     """Histogram of drive_time_min."""
     valid = df["drive_time_min"].dropna()
-    nbins = max(1, int((valid.max() - valid.min()) / bin_size_min)) if len(valid) > 1 else 10
+    stats = valid.agg(["min", "max"])
+    nbins = max(1, int((stats["max"] - stats["min"]) / bin_size_min)) if len(valid) > 1 else 10
     fig = px.histogram(
         valid,
-        x=valid,
         nbins=nbins,
         title="Distribution of Drive Time to Hospital",
-        labels={"x": "Drive Time (min)", "count": "Patients"},
+        labels={"value": "Drive Time (min)", "count": "Patients"},
         color_discrete_sequence=["#2196F3"],
     )
     fig.update_layout(bargap=0.05, xaxis_title="Drive Time (min)", yaxis_title="Number of Patients")
@@ -99,7 +101,8 @@ def make_histogram(df: pd.DataFrame, bin_size_min: int = 15) -> go.Figure:
 
 def make_time_band_bar(df: pd.DataFrame) -> go.Figure:
     """Bar chart: count per time band."""
-    present = [b for b in TIME_BAND_ORDER if b in df["time_band"].values]
+    present_set = set(df["time_band"])
+    present = [b for b in TIME_BAND_ORDER if b in present_set]
     counts = df["time_band"].value_counts().reindex(present, fill_value=0).reset_index()
     counts.columns = ["time_band", "count"]
     fig = px.bar(
@@ -117,7 +120,7 @@ def make_time_band_bar(df: pd.DataFrame) -> go.Figure:
 
 def make_scatter_dist_time(df: pd.DataFrame) -> go.Figure:
     """Scatter: drive_distance_km vs drive_time_min, coloured by time_band."""
-    valid = df[df["drive_distance_km"].notna() & df["drive_time_min"].notna()].copy()
+    valid = df[df["drive_distance_km"].notna() & df["drive_time_min"].notna()]
     fig = px.scatter(
         valid,
         x="drive_distance_km",
@@ -134,7 +137,7 @@ def make_scatter_dist_time(df: pd.DataFrame) -> go.Figure:
 
 def make_outcome_scatter(df: pd.DataFrame, outcome_col: str) -> go.Figure:
     """Scatter: outcome vs drive_time_min with OLS trendline."""
-    valid = df[df["drive_time_min"].notna() & df[outcome_col].notna()].copy()
+    valid = df[df["drive_time_min"].notna() & df[outcome_col].notna()]
     fig = px.scatter(
         valid,
         x="drive_time_min",
@@ -152,8 +155,9 @@ def make_outcome_scatter(df: pd.DataFrame, outcome_col: str) -> go.Figure:
 
 def make_outcome_by_band(df: pd.DataFrame, outcome_col: str) -> go.Figure:
     """Box plot: outcome distribution per time band."""
-    valid = df[df[outcome_col].notna() & df["time_band"].notna()].copy()
-    ordered = [b for b in TIME_BAND_ORDER if b in valid["time_band"].values]
+    valid = df[df[outcome_col].notna() & df["time_band"].notna()]
+    present_set = set(valid["time_band"])
+    ordered = [b for b in TIME_BAND_ORDER if b in present_set]
     fig = px.box(
         valid,
         x="time_band",
