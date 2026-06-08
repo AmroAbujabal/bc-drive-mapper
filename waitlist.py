@@ -85,3 +85,45 @@ def compute_fifo(
         )
 
     return df
+
+
+def compute_metrics(df: pd.DataFrame, col_map: dict[str, str]) -> pd.DataFrame:
+    """
+    Compute available pathway duration metrics based on col_map.
+
+    col_map keys (all optional except at least one pair must be present):
+        "referral", "evaluation", "decision", "waitlist", "booking", "surgery"
+
+    Added columns (only when both required inputs are present):
+        referral_to_evaluation_days, evaluation_to_decision_days,
+        decision_to_waitlist_days, wait_time_days, total_pathway_days
+
+    If any computed duration is negative, adds data_quality_flag = True for that row.
+    The data_quality_flag column is omitted entirely when no negatives are found.
+    """
+    df = df.copy()
+    quality_flags = pd.Series(False, index=df.index)
+
+    def _diff(from_key: str, to_key: str, out_col: str) -> None:
+        if from_key not in col_map or to_key not in col_map:
+            return
+        delta = (df[col_map[to_key]] - df[col_map[from_key]]).dt.days
+        df[out_col] = delta
+        quality_flags[delta.notna() & (delta < 0)] = True
+
+    _diff("referral", "evaluation", "referral_to_evaluation_days")
+    _diff("evaluation", "decision", "evaluation_to_decision_days")
+    _diff("decision", "waitlist", "decision_to_waitlist_days")
+    _diff("referral", "surgery", "total_pathway_days")
+
+    # wait_time_days: surgery minus waitlist (fallback to booking)
+    waitlist_src = col_map.get("waitlist") or col_map.get("booking")
+    if waitlist_src and "surgery" in col_map:
+        delta = (df[col_map["surgery"]] - df[waitlist_src]).dt.days
+        df["wait_time_days"] = delta
+        quality_flags[delta.notna() & (delta < 0)] = True
+
+    if quality_flags.any():
+        df["data_quality_flag"] = quality_flags
+
+    return df

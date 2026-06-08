@@ -1,5 +1,5 @@
 import pandas as pd
-from waitlist import detect_date_columns, parse_dates, compute_fifo
+from waitlist import detect_date_columns, parse_dates, compute_fifo, compute_metrics
 
 
 # ── detect_date_columns ────────────────────────────────────────────────────────
@@ -112,3 +112,58 @@ def test_tied_waitlist_dates_use_min_rank_with_gap():
     assert result.loc[2, "waitlist_rank"] == 3
     # Patient 2 operated first (surgery_rank = 1), deviation = 1 - 3 = -2
     assert result.loc[2, "deviation"] == -2
+
+
+# ── compute_metrics ───────────────────────────────────────────────────────────
+
+def test_wait_time_days_computed():
+    df = pd.DataFrame({
+        "wl": pd.to_datetime(["2024-01-01"]),
+        "sx": pd.to_datetime(["2024-04-10"]),  # 100 days later
+    })
+    result = compute_metrics(df, {"waitlist": "wl", "surgery": "sx"})
+    assert result.loc[0, "wait_time_days"] == 100
+
+def test_total_pathway_days_computed():
+    df = pd.DataFrame({
+        "ref": pd.to_datetime(["2024-01-01"]),
+        "sx": pd.to_datetime(["2024-07-19"]),  # 200 days later
+    })
+    result = compute_metrics(df, {"referral": "ref", "surgery": "sx"})
+    assert result.loc[0, "total_pathway_days"] == 200
+
+def test_missing_column_pair_skipped_no_error():
+    # No referral column — referral_to_evaluation_days must not appear
+    df = pd.DataFrame({
+        "wl": pd.to_datetime(["2024-01-01"]),
+        "sx": pd.to_datetime(["2024-04-10"]),
+    })
+    result = compute_metrics(df, {"waitlist": "wl", "surgery": "sx"})
+    assert "referral_to_evaluation_days" not in result.columns
+
+def test_negative_duration_sets_data_quality_flag():
+    # Surgery date before waitlist date — bad data
+    df = pd.DataFrame({
+        "wl": pd.to_datetime(["2024-06-01"]),
+        "sx": pd.to_datetime(["2024-01-01"]),
+    })
+    result = compute_metrics(df, {"waitlist": "wl", "surgery": "sx"})
+    assert "data_quality_flag" in result.columns
+    assert bool(result.loc[0, "data_quality_flag"]) is True
+
+def test_no_negative_durations_no_flag_column():
+    df = pd.DataFrame({
+        "wl": pd.to_datetime(["2024-01-01"]),
+        "sx": pd.to_datetime(["2024-06-01"]),
+    })
+    result = compute_metrics(df, {"waitlist": "wl", "surgery": "sx"})
+    assert "data_quality_flag" not in result.columns
+
+def test_still_waiting_produces_nan_wait_time():
+    df = pd.DataFrame({
+        "wl": pd.to_datetime(["2024-01-01", "2024-01-02"]),
+        "sx": [pd.NaT, pd.Timestamp("2024-06-01")],
+    })
+    result = compute_metrics(df, {"waitlist": "wl", "surgery": "sx"})
+    assert pd.isna(result.loc[0, "wait_time_days"])
+    assert result.loc[1, "wait_time_days"] == 151
