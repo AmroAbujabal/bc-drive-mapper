@@ -25,6 +25,18 @@ def test_detect_mostly_unparseable_excluded():
     df = pd.DataFrame({"mixed": ["2024-01-01", "hello", "world", "foo"]})
     assert "mixed" not in detect_date_columns(df)
 
+def test_detect_numeric_column_with_keyword_name_excluded():
+    # A column named "waitlist_score" containing integers must NOT be detected as a date
+    # even though the name contains a surgical-pathway keyword.
+    df = pd.DataFrame({"waitlist_score": [1, 2, 3, 4, 5]})
+    assert "waitlist_score" not in detect_date_columns(df)
+
+def test_detect_string_id_column_excluded():
+    # 4-digit string IDs like patient IDs parse as year 1001+ via pd.to_datetime.
+    # These must be rejected by the year range check (< 1900).
+    df = pd.DataFrame({"patient_code": ["1001", "1002", "1003", "1004"]})
+    assert "patient_code" not in detect_date_columns(df)
+
 
 # ── parse_dates ────────────────────────────────────────────────────────────────
 

@@ -19,19 +19,31 @@ def detect_date_columns(df: pd.DataFrame) -> list[str]:
 
     A column qualifies if its name matches a surgical-pathway keyword OR
     if ≥ 80% of its non-null values parse as dates (and are not numeric).
+    Numeric columns are excluded regardless of name, to avoid false positives
+    on columns like waitlist_score or patient_priority.
+    Raises no error if the DataFrame already contains columns named waitlist_rank,
+    surgery_rank, or deviation — they will be overwritten.
     """
     detected = []
     for col in df.columns:
-        if _DATE_NAME_RE.search(col):
-            detected.append(col)
-            continue
         non_null = df[col].dropna()
         if len(non_null) == 0:
             continue
-        # Skip purely numeric columns
+        # Skip numeric columns regardless of name — avoids false positives
+        # on score/priority columns that happen to have surgical-pathway keywords
         if pd.api.types.is_numeric_dtype(non_null):
             continue
+        if _DATE_NAME_RE.search(col):
+            detected.append(col)
+            continue
         parsed = pd.to_datetime(non_null, errors="coerce", format="mixed")
+        # Also reject columns where parsed years are outside a plausible clinical range
+        # (catches string ID columns like ['1001','1002'] that parse as year 1001, etc.)
+        valid = parsed.dropna()
+        if len(valid) == 0:
+            continue
+        if (valid.dt.year < 1900).any() or (valid.dt.year > 2100).any():
+            continue
         if parsed.notna().sum() / len(non_null) >= _DETECT_THRESHOLD:
             detected.append(col)
     return detected
