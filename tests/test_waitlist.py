@@ -1,5 +1,4 @@
 import pandas as pd
-import pytest
 from waitlist import detect_date_columns, parse_dates
 
 

@@ -31,7 +31,7 @@ def detect_date_columns(df: pd.DataFrame) -> list[str]:
         # Skip purely numeric columns
         if pd.api.types.is_numeric_dtype(non_null):
             continue
-        parsed = pd.to_datetime(non_null, errors="coerce")
+        parsed = pd.to_datetime(non_null, errors="coerce", format="mixed")
         if parsed.notna().sum() / len(non_null) >= _DETECT_THRESHOLD:
             detected.append(col)
     return detected
@@ -44,5 +44,5 @@ def parse_dates(df: pd.DataFrame, date_cols: list[str]) -> pd.DataFrame:
     """
     df = df.copy()
     for col in date_cols:
-        df[col] = pd.to_datetime(df[col], errors="coerce")
+        df[col] = pd.to_datetime(df[col], errors="coerce", format="mixed")
     return df
