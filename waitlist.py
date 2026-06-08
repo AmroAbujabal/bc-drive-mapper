@@ -46,3 +46,39 @@ def parse_dates(df: pd.DataFrame, date_cols: list[str]) -> pd.DataFrame:
     for col in date_cols:
         df[col] = pd.to_datetime(df[col], errors="coerce", format="mixed")
     return df
+
+
+def compute_fifo(
+    df: pd.DataFrame,
+    waitlist_col: str,
+    surgery_col: str,
+) -> pd.DataFrame:
+    """
+    Add waitlist_rank, surgery_rank, and deviation columns.
+
+    waitlist_rank: all patients ranked by waitlist date (1 = earliest, ties get min rank)
+    surgery_rank:  patients WITH a surgery date ranked by surgery date (1 = first operated)
+                   still-waiting patients get pd.NA
+    deviation:     surgery_rank - waitlist_rank (0 = FIFO, positive = delayed, negative = jumped)
+                   still-waiting patients get pd.NA
+    """
+    df = df.copy()
+
+    df["waitlist_rank"] = (
+        df[waitlist_col].rank(method="min", ascending=True, na_option="keep")
+        .astype("Int64")
+    )
+
+    has_surgery = df[surgery_col].notna()
+    df["surgery_rank"] = pd.array([pd.NA] * len(df), dtype="Int64")
+    if has_surgery.any():
+        ranks = df.loc[has_surgery, surgery_col].rank(method="min", ascending=True)
+        df.loc[has_surgery, "surgery_rank"] = ranks.astype("Int64")
+
+    df["deviation"] = pd.array([pd.NA] * len(df), dtype="Int64")
+    if has_surgery.any():
+        df.loc[has_surgery, "deviation"] = (
+            df.loc[has_surgery, "surgery_rank"] - df.loc[has_surgery, "waitlist_rank"]
+        )
+
+    return df

@@ -44,3 +44,56 @@ def test_parse_dates_coerces_bad_values_to_nat():
     df = pd.DataFrame({"d": ["2024-01-01", "not-a-date"]})
     result = parse_dates(df, ["d"])
     assert pd.isna(result.loc[1, "d"])
+
+
+# ── compute_fifo ──────────────────────────────────────────────────────────────
+
+from waitlist import compute_fifo
+
+
+def test_perfect_fifo_all_deviations_zero():
+    df = pd.DataFrame({
+        "wl": pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"]),
+        "sx": pd.to_datetime(["2024-06-01", "2024-06-02", "2024-06-03"]),
+    })
+    result = compute_fifo(df, "wl", "sx")
+    assert list(result["deviation"]) == [0, 0, 0]
+
+def test_queue_jump_detected():
+    # Patient 0 waited longer → positive deviation; patient 1 jumped → negative
+    df = pd.DataFrame({
+        "wl": pd.to_datetime(["2024-01-01", "2024-01-02"]),
+        "sx": pd.to_datetime(["2024-06-02", "2024-06-01"]),  # order swapped
+    })
+    result = compute_fifo(df, "wl", "sx")
+    assert result.loc[0, "deviation"] == 1
+    assert result.loc[1, "deviation"] == -1
+
+def test_still_waiting_patient_has_null_surgery_rank_and_deviation():
+    df = pd.DataFrame({
+        "wl": pd.to_datetime(["2024-01-01", "2024-01-02"]),
+        "sx": [pd.NaT, pd.Timestamp("2024-06-01")],
+    })
+    result = compute_fifo(df, "wl", "sx")
+    assert pd.isna(result.loc[0, "surgery_rank"])
+    assert pd.isna(result.loc[0, "deviation"])
+
+def test_all_still_waiting_no_surgery_ranks():
+    df = pd.DataFrame({
+        "wl": pd.to_datetime(["2024-01-01", "2024-01-02"]),
+        "sx": [pd.NaT, pd.NaT],
+    })
+    result = compute_fifo(df, "wl", "sx")
+    assert result["surgery_rank"].isna().all()
+    assert result["deviation"].isna().all()
+
+def test_waitlist_rank_assigned_to_all_patients():
+    df = pd.DataFrame({
+        "wl": pd.to_datetime(["2024-01-03", "2024-01-01", "2024-01-02"]),
+        "sx": [pd.NaT, pd.Timestamp("2024-06-01"), pd.Timestamp("2024-07-01")],
+    })
+    result = compute_fifo(df, "wl", "sx")
+    # waitlist_rank should be 3, 1, 2 (by wl date order)
+    assert result.loc[0, "waitlist_rank"] == 3
+    assert result.loc[1, "waitlist_rank"] == 1
+    assert result.loc[2, "waitlist_rank"] == 2
