@@ -66,7 +66,8 @@ def _best_match(keywords: list[str]) -> int:
         for c in detected:
             if kw in c.lower():
                 return cols.index(c)
-    return 0
+    # Fall back to the first date-detected column, not cols[0]
+    return cols.index(detected[0]) if detected else 0
 
 
 with st.expander("Column mapping", expanded=True):
@@ -112,6 +113,10 @@ with st.expander("Column mapping", expanded=True):
         index=id_default,
     )
 
+if waitlist_col == surgery_col:
+    st.error("Waitlist date column and Surgery date column must be different.")
+    st.stop()
+
 # ── Compute ───────────────────────────────────────────────────────────────────
 col_map: dict[str, str] = {"waitlist": waitlist_col, "surgery": surgery_col}
 if referral_raw != "(none)":
@@ -148,7 +153,7 @@ c4.metric(
 
 if "wait_time_days" in enriched.columns:
     med = enriched["wait_time_days"].median()
-    st.metric("Median wait time", f"{int(med):,} days" if pd.notna(med) else "N/A")
+    st.metric("Median wait time", f"{round(med):,} days" if pd.notna(med) else "N/A")
 
 if "data_quality_flag" in enriched.columns:
     bad = int(enriched["data_quality_flag"].sum())
