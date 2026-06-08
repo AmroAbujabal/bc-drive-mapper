@@ -85,6 +85,45 @@ When you download the enriched CSV, you get your original columns plus:
 
 ---
 
+## Waitlist FIFO Audit
+
+A second tool is available in the sidebar: **2 Waitlist FIFO Audit**.
+
+Upload a surgical waitlist CSV to check whether patients are being served in first-in, first-out order.
+
+### How to Use It
+
+1. Click **"2 Waitlist FIFO Audit"** in the sidebar
+2. Upload your waitlist CSV
+3. The app auto-detects the date columns and pre-fills the dropdowns
+4. The table shows: waitlist rank, surgery rank, deviation, and wait time days
+5. **Red rows** = operated later than their queue position warranted. **Green rows** = jumped the queue. The sidebar slider controls the threshold for what counts as a violation
+
+### What Your CSV Needs
+
+At minimum, two date columns:
+- A **waitlist date** (when the patient was added to the surgical list)
+- A **surgery date** (when they were operated — leave blank if still waiting)
+
+Optional columns that unlock extra metrics:
+- `referral_date` — time from referral to evaluation
+- `evaluation_date` — time from evaluation to decision
+- `decision_date` — time from decision to waitlist
+
+A sample file (`dummy_waitlist.csv`) is included with 30 fake patients to test with.
+
+### Output Columns
+
+| Column | Description |
+|--------|-------------|
+| `waitlist_rank` | Position in queue by waitlist date (1 = first on list) |
+| `surgery_rank` | Position by surgery date (1 = first operated) |
+| `deviation` | surgery_rank − waitlist_rank (0 = perfect FIFO) |
+| `wait_time_days` | Days from waitlist date to surgery date |
+| `data_quality_flag` | True if any dates are in the wrong order |
+
+---
+
 ## Notes
 
 - **No API key required** — uses the free BC Address Geocoder and the public OSRM routing server
