@@ -58,6 +58,12 @@ with st.sidebar:
 st.title("🏥 BC Drive Mapper")
 st.caption("Maps driving distance and time from BC patient addresses to a focal point (default: BC Children's Hospital).")
 
+st.markdown("---")
+st.subheader("🔍 Patient Waitlist Timing")
+st.caption("Check whether surgical patients are being served in FIFO order.")
+st.page_link("pages/2_Waitlist_Audit.py", label="Open Waitlist FIFO Audit →", icon="🔍")
+st.markdown("---")
+
 uploaded = st.file_uploader("Upload patient CSV", type=["csv"])
 if uploaded is None:
     st.info("Upload a CSV to get started.")
