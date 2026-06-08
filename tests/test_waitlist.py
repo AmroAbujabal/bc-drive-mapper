@@ -167,3 +167,12 @@ def test_still_waiting_produces_nan_wait_time():
     result = compute_metrics(df, {"waitlist": "wl", "surgery": "sx"})
     assert pd.isna(result.loc[0, "wait_time_days"])
     assert result.loc[1, "wait_time_days"] == 151
+
+def test_booking_fallback_used_when_no_waitlist_key():
+    # When col_map has "booking" but not "waitlist", booking date is used for wait_time_days
+    df = pd.DataFrame({
+        "bk": pd.to_datetime(["2024-01-01"]),
+        "sx": pd.to_datetime(["2024-04-10"]),  # 100 days later
+    })
+    result = compute_metrics(df, {"booking": "bk", "surgery": "sx"})
+    assert result.loc[0, "wait_time_days"] == 100

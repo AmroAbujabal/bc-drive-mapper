@@ -114,7 +114,6 @@ def compute_metrics(df: pd.DataFrame, col_map: dict[str, str]) -> pd.DataFrame:
     _diff("referral", "evaluation", "referral_to_evaluation_days")
     _diff("evaluation", "decision", "evaluation_to_decision_days")
     _diff("decision", "waitlist", "decision_to_waitlist_days")
-    _diff("referral", "surgery", "total_pathway_days")
 
     # wait_time_days: surgery minus waitlist (fallback to booking)
     waitlist_src = col_map.get("waitlist") or col_map.get("booking")
@@ -122,6 +121,8 @@ def compute_metrics(df: pd.DataFrame, col_map: dict[str, str]) -> pd.DataFrame:
         delta = (df[col_map["surgery"]] - df[waitlist_src]).dt.days
         df["wait_time_days"] = delta
         quality_flags[delta.notna() & (delta < 0)] = True
+
+    _diff("referral", "surgery", "total_pathway_days")
 
     if quality_flags.any():
         df["data_quality_flag"] = quality_flags
