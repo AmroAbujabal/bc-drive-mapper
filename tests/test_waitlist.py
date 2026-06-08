@@ -95,3 +95,20 @@ def test_waitlist_rank_assigned_to_all_patients():
     assert result.loc[0, "waitlist_rank"] == 3
     assert result.loc[1, "waitlist_rank"] == 1
     assert result.loc[2, "waitlist_rank"] == 2
+
+def test_tied_waitlist_dates_use_min_rank_with_gap():
+    # Two patients joined on the same day → both get waitlist_rank = 1.
+    # The next patient gets waitlist_rank = 3 (not 2) because method="min" creates a gap.
+    # This means their deviation reflects the gap: if operated first, deviation = 1 - 3 = -2.
+    df = pd.DataFrame({
+        "wl": pd.to_datetime(["2024-01-01", "2024-01-01", "2024-01-02"]),
+        "sx": pd.to_datetime(["2024-06-02", "2024-06-03", "2024-06-01"]),
+    })
+    result = compute_fifo(df, "wl", "sx")
+    # Patients 0 and 1 share waitlist_rank = 1 (tied)
+    assert result.loc[0, "waitlist_rank"] == 1
+    assert result.loc[1, "waitlist_rank"] == 1
+    # Patient 2 gets waitlist_rank = 3 (gap due to tie cluster of size 2)
+    assert result.loc[2, "waitlist_rank"] == 3
+    # Patient 2 operated first (surgery_rank = 1), deviation = 1 - 3 = -2
+    assert result.loc[2, "deviation"] == -2

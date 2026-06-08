@@ -61,6 +61,9 @@ def compute_fifo(
                    still-waiting patients get pd.NA
     deviation:     surgery_rank - waitlist_rank (0 = FIFO, positive = delayed, negative = jumped)
                    still-waiting patients get pd.NA
+
+    Raises no error if the DataFrame already contains columns named waitlist_rank,
+    surgery_rank, or deviation — they will be overwritten.
     """
     df = df.copy()
 
