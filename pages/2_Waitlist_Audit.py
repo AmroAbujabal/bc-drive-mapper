@@ -180,24 +180,37 @@ for c in [
 display_df = enriched[display_cols].copy()
 
 
-def _highlight_row(row: pd.Series) -> list[str]:
-    dev = row.get("deviation", pd.NA)
+def _status(dev) -> str:
     if pd.isna(dev):
-        return [""] * len(row)
+        return ""
     if dev > deviation_threshold:
-        return ["background-color: #FFCCCC"] * len(row)
+        return "⚠ Delayed"
     if dev < -deviation_threshold:
-        return ["background-color: #CCFFCC"] * len(row)
-    return [""] * len(row)
+        return "✓ Early"
+    return ""
 
 
-styled = display_df.style.apply(_highlight_row, axis=1)
+display_df.insert(0, "Status", display_df.get("deviation", pd.NA).apply(_status))
+
+_day_cols = [
+    "wait_time_days",
+    "referral_to_evaluation_days",
+    "evaluation_to_decision_days",
+    "decision_to_waitlist_days",
+    "total_pathway_days",
+]
+_date_cols = [c for c in [waitlist_col, surgery_col] if c in display_df.columns]
+
+_fmt = {c: "{:.0f}" for c in _day_cols if c in display_df.columns}
+_fmt.update({c: lambda v: v.strftime("%Y-%m-%d") if pd.notna(v) else "" for c in _date_cols})
+
+styled = display_df.style.format(_fmt, na_rep="")
 
 st.subheader("FIFO Audit Table")
 st.caption(
-    "Red rows: operated later than queue position warranted. "
-    "Green rows: operated earlier (jumped queue). "
-    "No colour: within threshold or still waiting."
+    "⚠ Delayed: operated later than queue position warranted. "
+    "✓ Early: operated earlier (jumped queue). "
+    "Blank: within threshold or still waiting."
 )
 st.dataframe(styled, use_container_width=True, height=500)
 
