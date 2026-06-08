@@ -55,14 +55,8 @@ with st.sidebar:
         st.success("Cache cleared.")
 
 # ── Main area ─────────────────────────────────────────────────────────────────
-st.title("🏥 BC Drive Mapper")
+st.title("🏥 BC Drive Mapper — Drive Time Analysis")
 st.caption("Maps driving distance and time from BC patient addresses to a focal point (default: BC Children's Hospital).")
-
-st.markdown("---")
-st.subheader("🔍 Patient Waitlist Timing")
-st.caption("Check whether surgical patients are being served in FIFO order.")
-st.page_link("pages/2_Waitlist_Audit.py", label="Open Waitlist FIFO Audit →", icon="🔍")
-st.markdown("---")
 
 uploaded = st.file_uploader("Upload patient CSV", type=["csv"])
 if uploaded is None:
@@ -236,3 +230,8 @@ st.download_button(
     file_name="bc_drive_mapper_enriched.csv",
     mime="text/csv",
 )
+
+st.markdown("---")
+st.markdown("## 🔍 Patient Waitlist Timing")
+st.markdown("Check whether surgical patients on your waitlist are being served in first-in, first-out order. Upload a waitlist CSV to see queue rankings, deviations, and wait times.")
+st.page_link("pages/2_Waitlist_Audit.py", label="Open Waitlist FIFO Audit →", icon="🔍")
