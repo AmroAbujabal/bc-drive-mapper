@@ -10,12 +10,6 @@ import streamlit as st
 
 import waitlist as wl
 
-st.set_page_config(
-    page_title="Waitlist FIFO Audit",
-    page_icon="🔍",
-    layout="wide",
-)
-
 st.title("🔍 Waitlist FIFO Audit")
 st.caption(
     "Upload a surgical waitlist CSV to check whether patients are served in FIFO order."
@@ -215,3 +209,8 @@ st.download_button(
     file_name="waitlist_fifo_audit.csv",
     mime="text/csv",
 )
+
+st.markdown("---")
+st.markdown("## 🏥 Drive Time Analysis")
+st.markdown("Map driving distance and time from patient addresses to a hospital focal point.")
+st.page_link("drive_time.py", label="← Back to Drive Time Analysis", icon="🏥")
