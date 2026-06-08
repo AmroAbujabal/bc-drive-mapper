@@ -1,5 +1,5 @@
 import pandas as pd
-from waitlist import detect_date_columns, parse_dates
+from waitlist import detect_date_columns, parse_dates, compute_fifo
 
 
 # ── detect_date_columns ────────────────────────────────────────────────────────
@@ -47,8 +47,6 @@ def test_parse_dates_coerces_bad_values_to_nat():
 
 
 # ── compute_fifo ──────────────────────────────────────────────────────────────
-
-from waitlist import compute_fifo
 
 
 def test_perfect_fifo_all_deviations_zero():
